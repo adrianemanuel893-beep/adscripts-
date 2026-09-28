@@ -1,6 +1,5 @@
 
-
-	local Players = game:GetService("Players")
+local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
 
@@ -217,7 +216,7 @@ local tpInstant =
 	botao("⚡  TP Instant",115)
 
 local autoTP =
-	botao("🤖  AUTO TP  •  200",170)
+	botao("🤖  AUTO TP  •  300",170)
 
 --------------------------------------------------
 -- BOLA
@@ -275,7 +274,7 @@ criarBola.MouseButton1Click:Connect(function()
 end)
 
 --------------------------------------------------
--- TP INSTANT
+-- TP INSTANT • 0.4s
 --------------------------------------------------
 
 local teleportando = false
@@ -319,7 +318,7 @@ tpInstant.MouseButton1Click:Connect(function()
 
 	local inicio = os.clock()
 
-	while os.clock() - inicio < 0.7 do
+	while os.clock() - inicio < 0.4 do
 
 		if not root.Parent or not bola.Parent then
 			break
@@ -341,7 +340,7 @@ tpInstant.MouseButton1Click:Connect(function()
 end)
 
 --------------------------------------------------
--- AUTO TP 200
+-- AUTO TP 300
 --------------------------------------------------
 
 local autoAtivo = false
@@ -351,7 +350,7 @@ autoTP.MouseButton1Click:Connect(function()
 	if autoAtivo then
 
 		autoAtivo = false
-		autoTP.Text = "🤖  AUTO TP  •  200"
+		autoTP.Text = "🤖  AUTO TP  •  300"
 
 		return
 	end
@@ -362,7 +361,7 @@ autoTP.MouseButton1Click:Connect(function()
 
 		task.wait(0.5)
 
-		autoTP.Text = "🤖  AUTO TP  •  200"
+		autoTP.Text = "🤖  AUTO TP  •  300"
 
 		return
 	end
@@ -408,7 +407,7 @@ autoTP.MouseButton1Click:Connect(function()
 			(destino - root.Position).Unit
 
 		root.AssemblyLinearVelocity =
-			direcao * 200
+			direcao * 300
 
 		RunService.Heartbeat:Wait()
 	end
@@ -419,7 +418,7 @@ autoTP.MouseButton1Click:Connect(function()
 	autoAtivo = false
 
 	autoTP.Text =
-		"🤖  AUTO TP  •  200"
+		"🤖  AUTO TP  •  300"
 end)
 
 --------------------------------------------------
