@@ -1,432 +1,862 @@
+--==================================================
+-- ADSCRIPTS
+-- TP INSTANT + CAMERA + POSICAO SEGURA
+--==================================================
 
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
 
-local player = Players.LocalPlayer
+local Player = Players.LocalPlayer
 
---------------------------------------------------
--- GUI
---------------------------------------------------
+local AUTO_SPEED = 300
+local TP_HOLD_TIME = 1.5
 
-local gui = Instance.new("ScreenGui")
-gui.Name = "ADSCRIPTS"
-gui.ResetOnSpawn = false
-gui.Parent = player:WaitForChild("PlayerGui")
+-- Distância acima do chão
+local SAFE_HEIGHT = 4
 
---------------------------------------------------
--- CORES
---------------------------------------------------
-
-local amarelo = Color3.fromRGB(255,190,0)
-local amareloClaro = Color3.fromRGB(255,225,80)
-local branco = Color3.fromRGB(255,255,255)
-local escuro = Color3.fromRGB(30,30,30)
-
---------------------------------------------------
--- FUNÇÃO ARRASTAR
---------------------------------------------------
-
-local function arrastavel(obj)
-
-	local movendo = false
-	local inicio
-	local posicao
-
-	obj.InputBegan:Connect(function(input)
-
-		if input.UserInputType == Enum.UserInputType.Touch
-			or input.UserInputType == Enum.UserInputType.MouseButton1 then
-
-			movendo = true
-			inicio = input.Position
-			posicao = obj.Position
-		end
-	end)
-
-	UserInputService.InputChanged:Connect(function(input)
-
-		if not movendo then return end
-
-		if input.UserInputType ~= Enum.UserInputType.Touch
-			and input.UserInputType ~= Enum.UserInputType.MouseMovement then
-			return
-		end
-
-		local delta = input.Position - inicio
-
-		obj.Position = UDim2.new(
-			posicao.X.Scale,
-			posicao.X.Offset + delta.X,
-			posicao.Y.Scale,
-			posicao.Y.Offset + delta.Y
-		)
-	end)
-
-	UserInputService.InputEnded:Connect(function(input)
-
-		if input.UserInputType == Enum.UserInputType.Touch
-			or input.UserInputType == Enum.UserInputType.MouseButton1 then
-
-			movendo = false
-		end
-	end)
-end
-
---------------------------------------------------
--- QUADRADINHO COM A
---------------------------------------------------
-
-local mini = Instance.new("TextButton")
-
-mini.Size = UDim2.new(0,58,0,58)
-mini.Position = UDim2.new(0.5,-29,0.5,-29)
-
-mini.BackgroundColor3 = amarelo
-mini.Text = "A"
-mini.TextColor3 = branco
-mini.TextSize = 34
-mini.Font = Enum.Font.GothamBlack
-
-mini.BorderSizePixel = 0
-mini.AutoButtonColor = true
-mini.Parent = gui
-
-local miniCorner = Instance.new("UICorner")
-miniCorner.CornerRadius = UDim.new(0,14)
-miniCorner.Parent = mini
-
-local miniStroke = Instance.new("UIStroke")
-miniStroke.Color = branco
-miniStroke.Thickness = 2
-miniStroke.Parent = mini
-
-arrastavel(mini)
-
---------------------------------------------------
--- PAINEL PEQUENO
---------------------------------------------------
-
-local panel = Instance.new("Frame")
-
-panel.Size = UDim2.new(0,285,0,245)
-panel.Position = UDim2.new(0.5,-142,0.5,-122)
-
-panel.BackgroundColor3 = escuro
-panel.BorderSizePixel = 0
-panel.Visible = false
-panel.Parent = gui
-
-local panelCorner = Instance.new("UICorner")
-panelCorner.CornerRadius = UDim.new(0,20)
-panelCorner.Parent = panel
-
-local panelStroke = Instance.new("UIStroke")
-panelStroke.Color = amarelo
-panelStroke.Thickness = 3
-panelStroke.Parent = panel
-
-arrastavel(panel)
-
---------------------------------------------------
--- BRILHO DO PAINEL
---------------------------------------------------
-
-local brilho = Instance.new("UIGradient")
-
-brilho.Color = ColorSequence.new({
-	ColorSequenceKeypoint.new(0, Color3.fromRGB(45,45,45)),
-	ColorSequenceKeypoint.new(1, Color3.fromRGB(20,20,20))
-})
-
-brilho.Rotation = 90
-brilho.Parent = panel
-
---------------------------------------------------
--- TÍTULO
---------------------------------------------------
-
-local titulo = Instance.new("TextLabel")
-
-titulo.Size = UDim2.new(1,-20,0,45)
-titulo.Position = UDim2.new(0,10,0,4)
-
-titulo.BackgroundTransparency = 1
-titulo.Text = "AD SCRIPTS"
-titulo.TextColor3 = amarelo
-titulo.TextSize = 23
-titulo.Font = Enum.Font.GothamBlack
-
-titulo.Parent = panel
-
---------------------------------------------------
--- LINHA DECORATIVA
---------------------------------------------------
-
-local linha = Instance.new("Frame")
-
-linha.Size = UDim2.new(1,-40,0,2)
-linha.Position = UDim2.new(0,20,0,48)
-
-linha.BackgroundColor3 = amarelo
-linha.BorderSizePixel = 0
-linha.Parent = panel
-
---------------------------------------------------
--- FUNÇÃO BOTÃO
---------------------------------------------------
-
-local function botao(texto,y)
-
-	local b = Instance.new("TextButton")
-
-	b.Size = UDim2.new(1,-35,0,48)
-	b.Position = UDim2.new(0,17.5,0,y)
-
-	b.BackgroundColor3 = amarelo
-	b.Text = texto
-	b.TextColor3 = branco
-	b.TextSize = 16
-	b.Font = Enum.Font.GothamBold
-
-	b.BorderSizePixel = 0
-	b.AutoButtonColor = true
-	b.Parent = panel
-
-	local c = Instance.new("UICorner")
-	c.CornerRadius = UDim.new(0,13)
-	c.Parent = b
-
-	local s = Instance.new("UIStroke")
-	s.Color = amareloClaro
-	s.Thickness = 2
-	s.Parent = b
-
-	return b
-end
-
---------------------------------------------------
--- BOTÕES
---------------------------------------------------
-
-local criarBola =
-	botao("🔵  Criar Bola",60)
-
-local tpInstant =
-	botao("⚡  TP Instant",115)
-
-local autoTP =
-	botao("🤖  AUTO TP  •  300",170)
-
---------------------------------------------------
--- BOLA
---------------------------------------------------
-
-local bola = nil
-
-criarBola.MouseButton1Click:Connect(function()
-
-	if bola then
-
-		bola:Destroy()
-		bola = nil
-
-		criarBola.Text = "🔵  Criar Bola"
-
-		return
-	end
-
-	local character = player.Character
-	if not character then return end
-
-	local root =
-		character:FindFirstChild("HumanoidRootPart")
-
-	if not root then return end
-
-	bola = Instance.new("Part")
-
-	bola.Name = "BolaTP"
-	bola.Shape = Enum.PartType.Ball
-	bola.Size = Vector3.new(3,3,3)
-
-	bola.Position =
-		root.Position +
-		root.CFrame.LookVector * 8
-
-	bola.Anchored = true
-	bola.CanCollide = false
-	bola.Material = Enum.Material.Neon
-	bola.Color = Color3.fromRGB(0,140,255)
-
-	bola.Parent = workspace
-
-	local luz =
-		Instance.new("PointLight")
-
-	luz.Color = Color3.fromRGB(0,150,255)
-	luz.Brightness = 3
-	luz.Range = 12
-
-	luz.Parent = bola
-
-	criarBola.Text = "❌  Remover Bola"
-end)
-
---------------------------------------------------
--- TP INSTANT • 0.4s
---------------------------------------------------
-
-local teleportando = false
-
-tpInstant.MouseButton1Click:Connect(function()
-
-	if teleportando then return end
-
-	if not bola or not bola.Parent then
-
-		tpInstant.Text = "⚠️  CRIE A BOLA"
-
-		task.wait(0.5)
-
-		tpInstant.Text = "⚡  TP Instant"
-
-		return
-	end
-
-	local character = player.Character
-	if not character then return end
-
-	local root =
-		character:FindFirstChild("HumanoidRootPart")
-
-	if not root then return end
-
-	teleportando = true
-	tpInstant.Text = "⚡  TP..."
-
-	local destino =
-		bola.CFrame + Vector3.new(0,3,0)
-
-	root.CFrame = destino
-
-	root.AssemblyLinearVelocity =
-		Vector3.zero
-
-	root.AssemblyAngularVelocity =
-		Vector3.zero
-
-	local inicio = os.clock()
-
-	while os.clock() - inicio < 0.4 do
-
-		if not root.Parent or not bola.Parent then
-			break
-		end
-
-		root.CFrame = destino
-
-		root.AssemblyLinearVelocity =
-			Vector3.zero
-
-		root.AssemblyAngularVelocity =
-			Vector3.zero
-
-		RunService.Heartbeat:Wait()
-	end
-
-	tpInstant.Text = "⚡  TP Instant"
-	teleportando = false
-end)
-
---------------------------------------------------
--- AUTO TP 300
---------------------------------------------------
-
+local tpAtual = 1
+local tpMovendo = false
 local autoAtivo = false
 
-autoTP.MouseButton1Click:Connect(function()
+local bolas = {
+    [1] = nil,
+    [2] = nil
+}
 
-	if autoAtivo then
+--==================================================
+-- GUI
+--==================================================
 
-		autoAtivo = false
-		autoTP.Text = "🤖  AUTO TP  •  300"
+local Gui = Instance.new("ScreenGui")
+Gui.Name = "ADSCRIPTS"
+Gui.ResetOnSpawn = false
+Gui.Parent = Player:WaitForChild("PlayerGui")
 
-		return
-	end
+local Mini = Instance.new("TextButton")
+Mini.Size = UDim2.new(0,44,0,44)
+Mini.Position = UDim2.new(0,12,0.5,-22)
+Mini.BackgroundColor3 = Color3.fromRGB(255,255,255)
+Mini.TextColor3 = Color3.fromRGB(255,190,0)
+Mini.Text = "A"
+Mini.TextSize = 23
+Mini.Font = Enum.Font.GothamBold
+Mini.Parent = Gui
 
-	if not bola or not bola.Parent then
+local MiniCorner = Instance.new("UICorner")
+MiniCorner.CornerRadius = UDim.new(0,11)
+MiniCorner.Parent = Mini
 
-		autoTP.Text = "⚠️  CRIE A BOLA"
+--==================================================
+-- PAINEL
+--==================================================
 
-		task.wait(0.5)
+local Panel = Instance.new("Frame")
+Panel.Size = UDim2.new(0,300,0,300)
+Panel.Position = UDim2.new(0.5,-150,0.5,-150)
+Panel.BackgroundColor3 = Color3.fromRGB(255,255,255)
+Panel.BorderSizePixel = 0
+Panel.Parent = Gui
 
-		autoTP.Text = "🤖  AUTO TP  •  300"
+local PanelCorner = Instance.new("UICorner")
+PanelCorner.CornerRadius = UDim.new(0,13)
+PanelCorner.Parent = Panel
 
-		return
-	end
+--==================================================
+-- TOPO
+--==================================================
 
-	autoAtivo = true
-	autoTP.Text = "🟢  AUTO TP ATIVO"
+local Top = Instance.new("Frame")
+Top.Size = UDim2.new(1,0,0,45)
+Top.BackgroundColor3 = Color3.fromRGB(255,205,0)
+Top.BorderSizePixel = 0
+Top.Parent = Panel
 
-	local character = player.Character
+local TopCorner = Instance.new("UICorner")
+TopCorner.CornerRadius = UDim.new(0,13)
+TopCorner.Parent = Top
 
-	if not character then
-		autoAtivo = false
-		return
-	end
+local Title = Instance.new("TextLabel")
+Title.Size = UDim2.new(1,-50,1,0)
+Title.Position = UDim2.new(0,12,0,0)
+Title.BackgroundTransparency = 1
+Title.Text = "ADSCRIPTS"
+Title.TextColor3 = Color3.fromRGB(255,255,255)
+Title.TextSize = 18
+Title.Font = Enum.Font.GothamBold
+Title.TextXAlignment = Enum.TextXAlignment.Left
+Title.Parent = Top
 
-	local root =
-		character:FindFirstChild("HumanoidRootPart")
+local Minimize = Instance.new("TextButton")
+Minimize.Size = UDim2.new(0,34,0,32)
+Minimize.Position = UDim2.new(1,-39,0,6)
+Minimize.BackgroundColor3 = Color3.fromRGB(255,255,255)
+Minimize.TextColor3 = Color3.fromRGB(255,190,0)
+Minimize.Text = "—"
+Minimize.TextSize = 21
+Minimize.Font = Enum.Font.GothamBold
+Minimize.Parent = Top
 
-	if not root then
-		autoAtivo = false
-		return
-	end
+local MinCorner = Instance.new("UICorner")
+MinCorner.CornerRadius = UDim.new(0,8)
+MinCorner.Parent = Minimize
 
-	while autoAtivo
-		and bola
-		and bola.Parent
-		and root.Parent do
+--==================================================
+-- TABS
+--==================================================
 
-		local destino =
-			bola.Position + Vector3.new(0,3,0)
+local Tabs = Instance.new("Frame")
+Tabs.Size = UDim2.new(1,-16,0,35)
+Tabs.Position = UDim2.new(0,8,0,53)
+Tabs.BackgroundTransparency = 1
+Tabs.Parent = Panel
 
-		local distancia =
-			(destino - root.Position).Magnitude
+local function CriarTab(texto,pos)
 
-		if distancia <= 2 then
+    local b = Instance.new("TextButton")
 
-			root.AssemblyLinearVelocity =
-				Vector3.zero
+    b.Size = UDim2.new(0.31,0,1,0)
+    b.Position = UDim2.new(pos,0,0,0)
+    b.BackgroundColor3 = Color3.fromRGB(245,245,245)
+    b.Text = texto
+    b.TextColor3 = Color3.fromRGB(70,70,70)
+    b.TextSize = 11
+    b.Font = Enum.Font.GothamBold
+    b.Parent = Tabs
 
-			break
-		end
+    local c = Instance.new("UICorner")
+    c.CornerRadius = UDim.new(0,7)
+    c.Parent = b
 
-		local direcao =
-			(destino - root.Position).Unit
+    return b
+end
 
-		root.AssemblyLinearVelocity =
-			direcao * 300
+local MainTab = CriarTab("MAIN",0)
+local BolasTab = CriarTab("BOLAS TP",0.345)
+local ComoTab = CriarTab("COMO USAR",0.69)
 
-		RunService.Heartbeat:Wait()
-	end
+--==================================================
+-- PÁGINAS
+--==================================================
 
-	root.AssemblyLinearVelocity =
-		Vector3.zero
+local function CriarPagina()
 
-	autoAtivo = false
+    local p = Instance.new("Frame")
 
-	autoTP.Text =
-		"🤖  AUTO TP  •  300"
+    p.Size = UDim2.new(1,-16,1,-98)
+    p.Position = UDim2.new(0,8,0,93)
+    p.BackgroundTransparency = 1
+    p.Parent = Panel
+
+    return p
+end
+
+local MainPage = CriarPagina()
+local BolasPage = CriarPagina()
+local ComoPage = CriarPagina()
+
+BolasPage.Visible = false
+ComoPage.Visible = false
+
+--==================================================
+-- BOTÕES
+--==================================================
+
+local function CriarBotao(parent,texto,y)
+
+    local b = Instance.new("TextButton")
+
+    b.Size = UDim2.new(1,0,0,45)
+    b.Position = UDim2.new(0,0,0,y)
+
+    b.BackgroundColor3 =
+        Color3.fromRGB(255,205,0)
+
+    b.TextColor3 =
+        Color3.fromRGB(255,255,255)
+
+    b.Text = texto
+    b.TextSize = 14
+    b.Font = Enum.Font.GothamBold
+    b.Parent = parent
+
+    local c = Instance.new("UICorner")
+    c.CornerRadius = UDim.new(0,10)
+    c.Parent = b
+
+    return b
+end
+
+local TPButton =
+    CriarBotao(
+        MainPage,
+        "⚡ TP INSTANT • 1.5s",
+        5
+    )
+
+local AutoButton =
+    CriarBotao(
+        MainPage,
+        "🤖 AUTO TP • 300",
+        58
+    )
+
+local Bola1Button =
+    CriarBotao(
+        BolasPage,
+        "🔵 BOLA TP 1",
+        5
+    )
+
+local Bola2Button =
+    CriarBotao(
+        BolasPage,
+        "🟣 BOLA TP 2",
+        58
+    )
+
+--==================================================
+-- CRIAR BOLA
+--==================================================
+
+local function CriarBola(numero)
+
+    local char = Player.Character
+
+    if not char then
+        return
+    end
+
+    local root =
+        char:FindFirstChild("HumanoidRootPart")
+
+    if not root then
+        return
+    end
+
+    if bolas[numero]
+        and bolas[numero].Parent then
+
+        bolas[numero]:Destroy()
+        bolas[numero] = nil
+
+        return
+    end
+
+    local bola = Instance.new("Part")
+
+    bola.Name =
+        "BOLA TP "..numero
+
+    bola.Shape =
+        Enum.PartType.Ball
+
+    bola.Size =
+        Vector3.new(3,3,3)
+
+    bola.Material =
+        Enum.Material.Neon
+
+    bola.Anchored = true
+    bola.CanCollide = false
+    bola.CanTouch = false
+    bola.CanQuery = false
+
+    if numero == 1 then
+
+        bola.Color =
+            Color3.fromRGB(0,170,255)
+
+    else
+
+        bola.Color =
+            Color3.fromRGB(170,0,255)
+    end
+
+    bola.Position =
+        root.Position +
+        root.CFrame.LookVector * 8
+
+    bola.Parent = workspace
+
+    local luz =
+        Instance.new("PointLight")
+
+    luz.Brightness = 3
+    luz.Range = 15
+    luz.Color = bola.Color
+    luz.Parent = bola
+
+    bolas[numero] = bola
+end
+
+Bola1Button.MouseButton1Click:Connect(function()
+    CriarBola(1)
 end)
 
---------------------------------------------------
--- ABRIR / FECHAR
---------------------------------------------------
+Bola2Button.MouseButton1Click:Connect(function()
+    CriarBola(2)
+end)
 
-mini.MouseButton1Click:Connect(function()
+--==================================================
+-- ENCONTRAR CHÃO
+--==================================================
 
-	panel.Visible =
-		not panel.Visible
+local function EncontrarChao(posicao, char)
+
+    local params =
+        RaycastParams.new()
+
+    params.FilterType =
+        Enum.RaycastFilterType.Exclude
+
+    params.FilterDescendantsInstances = {
+        char
+    }
+
+    local origem =
+        posicao + Vector3.new(0,80,0)
+
+    local direcao =
+        Vector3.new(0,-160,0)
+
+    local resultado =
+        workspace:Raycast(
+            origem,
+            direcao,
+            params
+        )
+
+    if resultado then
+
+        return resultado.Position
+    end
+
+    return nil
+end
+
+--==================================================
+-- POSIÇÃO SEGURA
+--==================================================
+
+local function CalcularPosicaoSegura(bola,char,humanoid)
+
+    local chao =
+        EncontrarChao(
+            bola.Position,
+            char
+        )
+
+    if chao then
+
+        return Vector3.new(
+            bola.Position.X,
+            chao.Y +
+            humanoid.HipHeight +
+            SAFE_HEIGHT,
+            bola.Position.Z
+        )
+    end
+
+    -- Se não encontrar chão,
+    -- fica acima da própria bola.
+    return bola.Position +
+        Vector3.new(
+            0,
+            SAFE_HEIGHT + 2,
+            0
+        )
+end
+
+--==================================================
+-- TP INSTANT
+--==================================================
+
+TPButton.MouseButton1Click:Connect(function()
+
+    if tpMovendo then
+        return
+    end
+
+    local char =
+        Player.Character
+
+    if not char then
+        return
+    end
+
+    local root =
+        char:FindFirstChild(
+            "HumanoidRootPart"
+        )
+
+    local humanoid =
+        char:FindFirstChildOfClass(
+            "Humanoid"
+        )
+
+    if not root or not humanoid then
+        return
+    end
+
+    local bola =
+        bolas[tpAtual]
+
+    if not bola
+        or not bola.Parent then
+
+        return
+    end
+
+    tpMovendo = true
+
+    local camera =
+        workspace.CurrentCamera
+
+    --==============================================
+    -- GUARDA A CÂMERA
+    --==============================================
+
+    local cameraLook =
+        camera.CFrame.LookVector
+
+    local cameraDistancia =
+        (camera.CFrame.Position -
+        root.Position).Magnitude
+
+    --==============================================
+    -- CALCULA POSIÇÃO SEGURA
+    --==============================================
+
+    local destino =
+        CalcularPosicaoSegura(
+            bola,
+            char,
+            humanoid
+        )
+
+    --==============================================
+    -- TP
+    --==============================================
+
+    root.CFrame =
+        CFrame.new(
+            destino
+        )
+
+    root.AssemblyLinearVelocity =
+        Vector3.zero
+
+    root.AssemblyAngularVelocity =
+        Vector3.zero
+
+    --==============================================
+    -- CÂMERA JUNTO
+    --==============================================
+
+    camera.CameraType =
+        Enum.CameraType.Scriptable
+
+    camera.CFrame =
+        CFrame.lookAt(
+            destino -
+            cameraLook *
+            cameraDistancia,
+
+            destino
+        )
+
+    --==============================================
+    -- 1.5 SEGUNDOS
+    --==============================================
+
+    local fim =
+        os.clock() +
+        TP_HOLD_TIME
+
+    while os.clock() < fim do
+
+        if not bola
+            or not bola.Parent then
+
+            break
+        end
+
+        destino =
+            CalcularPosicaoSegura(
+                bola,
+                char,
+                humanoid
+            )
+
+        root.CFrame =
+            CFrame.new(
+                destino
+            )
+
+        root.AssemblyLinearVelocity =
+            Vector3.zero
+
+        root.AssemblyAngularVelocity =
+            Vector3.zero
+
+        camera.CFrame =
+            CFrame.lookAt(
+                destino -
+                cameraLook *
+                cameraDistancia,
+
+                destino
+            )
+
+        RunService.RenderStepped:Wait()
+    end
+
+    --==============================================
+    -- DEVOLVE A CÂMERA
+    --==============================================
+
+    camera.CameraType =
+        Enum.CameraType.Custom
+
+    camera.CameraSubject =
+        humanoid
+
+    root.AssemblyLinearVelocity =
+        Vector3.zero
+
+    root.AssemblyAngularVelocity =
+        Vector3.zero
+
+    --==============================================
+    -- PRÓXIMA BOLA
+    --==============================================
+
+    if tpAtual == 1
+        and bolas[2]
+        and bolas[2].Parent then
+
+        tpAtual = 2
+
+    else
+
+        tpAtual = 1
+    end
+
+    tpMovendo = false
+end)
+
+--==================================================
+-- AUTO TP 300
+--==================================================
+
+AutoButton.MouseButton1Click:Connect(function()
+
+    autoAtivo =
+        not autoAtivo
+
+    if autoAtivo then
+
+        AutoButton.Text =
+            "🛑 AUTO TP • ATIVO"
+
+    else
+
+        AutoButton.Text =
+            "🤖 AUTO TP • 300"
+
+        local char =
+            Player.Character
+
+        if char then
+
+            local root =
+                char:FindFirstChild(
+                    "HumanoidRootPart"
+                )
+
+            if root then
+
+                root.AssemblyLinearVelocity =
+                    Vector3.zero
+            end
+        end
+    end
+end)
+
+RunService.Heartbeat:Connect(function()
+
+    if not autoAtivo then
+        return
+    end
+
+    local char =
+        Player.Character
+
+    if not char then
+        return
+    end
+
+    local root =
+        char:FindFirstChild(
+            "HumanoidRootPart"
+        )
+
+    if not root then
+        return
+    end
+
+    local bola =
+        bolas[1]
+
+    if not bola
+        or not bola.Parent then
+
+        bola = bolas[2]
+    end
+
+    if bola and bola.Parent then
+
+        local direcao =
+            Vector3.new(
+                bola.Position.X -
+                root.Position.X,
+
+                0,
+
+                bola.Position.Z -
+                root.Position.Z
+            )
+
+        local distancia =
+            direcao.Magnitude
+
+        if distancia > 3 then
+
+            root.AssemblyLinearVelocity =
+                direcao.Unit *
+                AUTO_SPEED
+
+        else
+
+            root.AssemblyLinearVelocity =
+                Vector3.zero
+
+            autoAtivo = false
+
+            AutoButton.Text =
+                "🤖 AUTO TP • 300"
+        end
+    end
+end)
+
+--==================================================
+-- COMO USAR
+--==================================================
+
+local Scroll =
+    Instance.new("ScrollingFrame")
+
+Scroll.Size =
+    UDim2.new(1,0,1,0)
+
+Scroll.BackgroundTransparency = 1
+Scroll.BorderSizePixel = 0
+Scroll.ScrollBarThickness = 4
+
+Scroll.CanvasSize =
+    UDim2.new(0,0,0,400)
+
+Scroll.Parent = ComoPage
+
+local Tutorial =
+    Instance.new("TextLabel")
+
+Tutorial.Size =
+    UDim2.new(1,-8,0,390)
+
+Tutorial.Position =
+    UDim2.new(0,4,0,0)
+
+Tutorial.BackgroundTransparency = 1
+
+Tutorial.TextColor3 =
+    Color3.fromRGB(50,50,50)
+
+Tutorial.TextSize = 12
+Tutorial.Font = Enum.Font.Gotham
+Tutorial.TextWrapped = true
+
+Tutorial.TextYAlignment =
+    Enum.TextYAlignment.Top
+
+Tutorial.TextXAlignment =
+    Enum.TextXAlignment.Left
+
+Tutorial.Text = [[
+📖 COMO USAR
+
+🔵 BOLA TP 1
+Cria o primeiro ponto.
+
+🟣 BOLA TP 2
+Cria o segundo ponto.
+
+⚡ TP INSTANT • 1.5s
+Vai direto para a posição.
+
+O personagem fica acima
+do chão para evitar ficar
+dentro do piso.
+
+A câmera acompanha o TP.
+
+1º clique → BOLA 1
+2º clique → BOLA 2
+3º clique → BOLA 1
+
+🤖 AUTO TP • 300
+Vai em direção à bola
+com velocidade 300.
+
+💡 DICA
+Deixa a bola atrás da linha branca.
+]]
+
+Tutorial.Parent = Scroll
+
+--==================================================
+-- ABAS
+--==================================================
+
+local function Mostrar(pagina)
+
+    MainPage.Visible = false
+    BolasPage.Visible = false
+    ComoPage.Visible = false
+
+    pagina.Visible = true
+end
+
+MainTab.MouseButton1Click:Connect(function()
+    Mostrar(MainPage)
+end)
+
+BolasTab.MouseButton1Click:Connect(function()
+    Mostrar(BolasPage)
+end)
+
+ComoTab.MouseButton1Click:Connect(function()
+    Mostrar(ComoPage)
+end)
+
+--==================================================
+-- MINIMIZAR
+--==================================================
+
+local minimizado = false
+
+Minimize.MouseButton1Click:Connect(function()
+
+    minimizado =
+        not minimizado
+
+    if minimizado then
+
+        Tabs.Visible = false
+        MainPage.Visible = false
+        BolasPage.Visible = false
+        ComoPage.Visible = false
+
+        Panel.Size =
+            UDim2.new(
+                0,300,
+                0,45
+            )
+
+        Minimize.Text = "+"
+
+    else
+
+        Panel.Size =
+            UDim2.new(
+                0,300,
+                0,300
+            )
+
+        Tabs.Visible = true
+        MainPage.Visible = true
+
+        Minimize.Text = "—"
+    end
+end)
+
+--==================================================
+-- BOTÃO A
+--==================================================
+
+Mini.MouseButton1Click:Connect(function()
+
+    Panel.Visible =
+        not Panel.Visible
+end)
+
+--==================================================
+-- ARRASTAR
+--==================================================
+
+local arrastando = false
+local inicioMouse
+local inicioPos
+
+Top.InputBegan:Connect(function(input)
+
+    if input.UserInputType ==
+        Enum.UserInputType.MouseButton1
+        or input.UserInputType ==
+        Enum.UserInputType.Touch then
+
+        arrastando = true
+        inicioMouse = input.Position
+        inicioPos = Panel.Position
+    end
+end)
+
+UserInputService.InputChanged:Connect(function(input)
+
+    if not arrastando then
+        return
+    end
+
+    if input.UserInputType ==
+        Enum.UserInputType.MouseMovement
+        or input.UserInputType ==
+        Enum.UserInputType.Touch then
+
+        local delta =
+            input.Position -
+            inicioMouse
+
+        Panel.Position =
+            UDim2.new(
+                inicioPos.X.Scale,
+                inicioPos.X.Offset +
+                delta.X,
+
+                inicioPos.Y.Scale,
+                inicioPos.Y.Offset +
+                delta.Y
+            )
+    end
+end)
+
+UserInputService.InputEnded:Connect(function(input)
+
+    if input.UserInputType ==
+        Enum.UserInputType.MouseButton1
+        or input.UserInputType ==
+        Enum.UserInputType.Touch then
+
+        arrastando = false
+    end
 end)
